@@ -52,7 +52,7 @@ button{
 
 <script>
 
-const url = "your-pdf-file.pdf";
+const url = "Newsletter Mockup March collab copy (1).pdf";
 
 let pdfDoc = null,
 pageNum = 1,
