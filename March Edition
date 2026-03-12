@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>PDF Flipbook</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<style>
+body{
+  font-family:Arial;
+  text-align:center;
+  background:#f2f2f2;
+}
+
+#viewer{
+  width:800px;
+  margin:auto;
+  background:white;
+  padding:10px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.2);
+}
+
+canvas{
+  width:100%;
+}
+
+button{
+  padding:10px 20px;
+  margin:10px;
+  font-size:16px;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div id="viewer">
+
+<h2>Flipbook Viewer</h2>
+
+<canvas id="pdf-render"></canvas>
+
+<div>
+<button id="prev">Previous</button>
+<span>Page: <span id="page-num"></span> / <span id="page-count"></span></span>
+<button id="next">Next</button>
+</div>
+
+</div>
+
+<script>
+
+const url = "your-pdf-file.pdf";
+
+let pdfDoc = null,
+pageNum = 1,
+pageIsRendering = false,
+pageNumIsPending = null;
+
+const scale = 1.5,
+canvas = document.querySelector('#pdf-render'),
+ctx = canvas.getContext('2d');
+
+const renderPage = num => {
+  pageIsRendering = true;
+
+  pdfDoc.getPage(num).then(page => {
+
+    const viewport = page.getViewport({scale});
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+
+    const renderCtx = {
+      canvasContext: ctx,
+      viewport
+    };
+
+    page.render(renderCtx).promise.then(() => {
+      pageIsRendering = false;
+
+      if(pageNumIsPending !== null){
+        renderPage(pageNumIsPending);
+        pageNumIsPending = null;
+      }
+    });
+
+    document.querySelector('#page-num').textContent = num;
+  });
+};
+
+const queueRenderPage = num => {
+  if(pageIsRendering){
+    pageNumIsPending = num;
+  } else {
+    renderPage(num);
+  }
+};
+
+const showPrevPage = () => {
+  if(pageNum <= 1){ return; }
+  pageNum--;
+  queueRenderPage(pageNum);
+};
+
+const showNextPage = () => {
+  if(pageNum >= pdfDoc.numPages){ return; }
+  pageNum++;
+  queueRenderPage(pageNum);
+};
+
+document.querySelector('#prev').addEventListener('click', showPrevPage);
+document.querySelector('#next').addEventListener('click', showNextPage);
+
+pdfjsLib.getDocument(url).promise.then(pdfDoc_ => {
+  pdfDoc = pdfDoc_;
+  document.querySelector('#page-count').textContent = pdfDoc.numPages;
+  renderPage(pageNum);
+});
+
+</script>
+
+</body>
+</html>
